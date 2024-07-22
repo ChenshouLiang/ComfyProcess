@@ -14,7 +14,7 @@ export class ComfyUIClient {
   }
 
   connect() {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve) => {
       if (this.ws) {
         await this.disconnect();
       }
