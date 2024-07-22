@@ -1,12 +1,42 @@
 {
   "name": "ComfyProcess",
   "version": "1.0.0",
-  "main": "index.js",
   "repository": "https://github.com/ChenshouLiang/ComfyProcess.git",
   "author": "chenshouliang <m17635645973@163.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": "^1.22.19"
+  },
+  "keywords": [
+    "comfyui",
+    "comfy-ui-sdk",
+    "stable-diffusion",
+    "comfy-ui-api",
+    "sdxl",
+    "sd1.5"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "dev": "npm run build --watch",
+    "build": "tsup src/index.js --dts --format cjs,esm",
+    "prettier": "prettier --config .prettierrc --write ./src"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "axios": "^1.7.2",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "pino": "^9.3.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.7.0",
+    "tsup": "^8.2.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4"
   }
 }
