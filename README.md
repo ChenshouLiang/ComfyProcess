@@ -4,10 +4,10 @@ yarn add comfy-process
 
 ```js
 import { ComfyUIClient } from 'comfy-process';
-
+import { v4 as uuidv4 } from 'uuid';
 //
 const serverAddress = '127.0.0.1:8189';
-const clientId = 'baadbabe-b00b-4206-9420-deadd00d1337';
+const clientId = uuidv4();
 const client = new ComfyUIClient(serverAddress, clientId);
 
 // 连接comfy服务器
@@ -21,5 +21,16 @@ await client.saveImages(images, outputDir);
 
 // 断开comfy连接
 await client.disconnect();
+```
+
+```js
+import { ComfyUIWeb } from 'comfy-process';
+
+const serverAddress = '127.0.0.1:8189';
+const clientId = uuidv4();
+const client = new ComfyUIClient(serverAddress);
+const images = await client.genWithWorkflow(prompt)
+// 将url转Blob
+await client.urlToBlob(url);
 ```
 

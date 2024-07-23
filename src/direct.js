@@ -7,53 +7,9 @@ const logger = pino({
   level: 'info',
 });
 
-export class ComfyUIClient {
-  constructor(serverAddress, clientId) {
+export class ComfyUIWeb {
+  constructor(serverAddress) {
     this.serverAddress = serverAddress;
-    this.clientId = clientId;
-  }
-
-  connect() {
-    return new Promise(async (resolve) => {
-      if (this.ws) {
-        await this.disconnect();
-      }
-      const url = `ws://${this.serverAddress}/ws?clientId=${this.clientId}`;
-      logger.info(`Connecting to url: ${url}`);
-
-      this.ws = new WebSocket(url, {
-        perMessageDeflate: false,
-      });
-
-      this.ws.on('open', () => {
-        logger.info('Connection open');
-        resolve();
-      });
-
-      this.ws.on('close', () => {
-        logger.info('Connection closed');
-      });
-
-      this.ws.on('error', (err) => {
-        logger.error({ err }, 'WebSockets error');
-      });
-
-      this.ws.on('message', (data, isBinary) => {
-        if (isBinary) {
-          logger.debug('Received binary data');
-        } else {
-          logger.debug('Received data: %s', data.toString());
-        }
-      });
-    })
-  }
-
-  // 没有连接上重新连接
-  async disconnect() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = undefined;
-    }
   }
 
   async uploadImage(image, filename, overwrite) {
@@ -73,7 +29,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async getEmbeddings(){
+  async getEmbeddings() {
     const res = await fetch(`http://${this.serverAddress}/embeddings`);
     const json = await res.json();
     if ('error' in json) {
@@ -82,7 +38,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async queuePrompt(prompt){
+  async queuePrompt(prompt) {
     const res = await fetch(`http://${this.serverAddress}/prompt`, {
       method: 'POST',
       headers: {
@@ -101,7 +57,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async interrupt(){
+  async interrupt() {
     const res = await fetch(`http://${this.serverAddress}/interrupt`, {
       method: 'POST',
       headers: {
@@ -132,18 +88,18 @@ export class ComfyUIClient {
     }
   }
 
-  async getImage( filename, subfolder, type ){
+  async getImage(filename, subfolder, type) {
     const res = await fetch(`http://${this.serverAddress}/view?` + new URLSearchParams({
-        filename,
-        subfolder,
-        type
-      })
+      filename,
+      subfolder,
+      type
+    })
     );
     const blob = await res.blob();
     return blob;
   }
 
-  async viewMetadata( folderName, filename ){
+  async viewMetadata(folderName, filename) {
     const res = await fetch(
       `http://${this.serverAddress}/view_metadata/${folderName}?filename=${filename}`,
     );
@@ -154,7 +110,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async getSystemStats(){
+  async getSystemStats() {
     const res = await fetch(`http://${this.serverAddress}/system_stats`);
     const json = await res.json();
     if ('error' in json) {
@@ -163,7 +119,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async getPrompt(){
+  async getPrompt() {
     const res = await fetch(`http://${this.serverAddress}/prompt`);
     const json = await res.json();
     if ('error' in json) {
@@ -172,7 +128,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async getObjectInfo(nodeClass){
+  async getObjectInfo(nodeClass) {
     const res = await fetch(`http://${this.serverAddress}/object_info` + (nodeClass ? `/${nodeClass}` : ''));
     const json = await res.json();
     if ('error' in json) {
@@ -181,7 +137,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async getHistory(promptId){
+  async getHistory(promptId) {
     const res = await fetch(
       `http://${this.serverAddress}/history` + (promptId ? `/${promptId}` : ''),
     );
@@ -192,7 +148,7 @@ export class ComfyUIClient {
     return json;
   }
 
-  async getQueue(){
+  async getQueue() {
     const res = await fetch(`http://${this.serverAddress}/queue`);
     const json = await res.json();
     if ('error' in json) {
@@ -211,60 +167,76 @@ export class ComfyUIClient {
     }
   }
 
-  async getImages(prompt) {
+  async paramObj(url) {
+    const search = decodeURIComponent(url.split('?')[1]).replace(/\+/g, ' ')
+    if (!search) {
+      return {}
+    }
+    const obj = {}
+    const searchArr = search.split('&')
+    searchArr.forEach(v => {
+      const index = v.indexOf('=')
+      if (index !== -1) {
+        const name = v.substring(0, index)
+        const val = v.substring(index + 1, v.length)
+        obj[name] = val
+      }
+    })
+    return obj
+  }
+
+  // url转Blob
+  async urlToBlob(url) {
+    let { filename, subfolder, type } = await param2Obj(url)
+    const blob = await getImage(filename, subfolder, type)
+    return blob
+  }
+
+  // 查找节点然后覆盖数据
+  async updateObject(objects,updatedObject) {
+    if (objects.hasOwnProperty(id)) {
+      objects[id].inputs = { ...objects[id].inputs, ...updatedObject }
+    }
+  }
+
+  async genWithWorkflow(prompt) {
     const queue = await this.queuePrompt(prompt);
     const promptId = queue.prompt_id;
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const outputImages = {}
-      const onMessage = async(data, isBinary) => {
-        if (isBinary) {
-          return
-        }
-        try {
-          const message = JSON.parse(data.toString())
-          if (message.type === 'executing') {
-            const messageData = message.data;
-            if (!messageData.node) {
-              const donePromptId = messageData.prompt_id;
-              logger.info(`已执行提示（ID: ${donePromptId})`)
-              if (messageData.prompt_id === promptId) {
-                //根据promptId 获取历史
-                const historyRes = await this.getHistory(promptId);
-                //根据promptId 返回图片
-                const history = historyRes[promptId];
-                // 处理多张图片
-                for (const nodeId of Object.keys(history.outputs)) {
-                  // 获取key,去取值
-                  const nodeOutput = history.outputs[nodeId];
-                  // 判断有没有图片
-                  if (nodeOutput.images) {
-                    // 用于存放图片
-                    const imagesOutput = []
-                    for (const image of nodeOutput.images) {
-                      // 处理图片转blob
-                      const blob = await this.getImage(
-                        image.filename,
-                        image.subfolder,
-                        image.type,
-                      );
-                      imagesOutput.push({
-                        blob,
-                        image,
-                      });
-                    }
-                    outputImages[nodeId] = imagesOutput
-                  }
-                }
-                this.ws?.off('message', onMessage);
-                return resolve(outputImages);
-              }
-            }
+      let isProcessComplete = false
+      try {
+        while (!isProcessComplete) {
+          // 获取图片进度
+          const queueInfo = await getQueue();
+          if (queueInfo.queue_running.length === 0 && queueInfo.queue_pending.length === 0) {
+            isProcessComplete = true
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 1000))
           }
-        } catch (err) {
-          return reject(err);
         }
+        //根据promptId 获取历史
+        const historyRes = await this.getHistory(promptId);
+        //根据promptId 返回图片
+        const history = historyRes[promptId];
+        // 处理多多个节点
+        for (const nodeId of Object.keys(history.outputs)) {
+          // 获取key_nodeId,去取值
+          const nodeOutput = history.outputs[nodeId];
+          if (nodeOutput.images) {
+            // 用于存放图片
+            const imagesOutput = []
+            for (const item of nodeOutput.images) {
+              const imageUrl = `${this.serverAddress}/view?subfolder=${item.subfolder}&type=${item.type}&filename=${item.filename}`
+              imagesOutput.push(imageUrl);
+            }
+            outputImages[nodeId] = imagesOutput
+          }
+        }
+        return resolve(outputImages);
+      } catch (err) {
+        return reject(err);
       }
-      this.ws?.on('message', onMessage);
     })
   }
 }
