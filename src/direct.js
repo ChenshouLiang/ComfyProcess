@@ -1,11 +1,5 @@
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import pino from 'pino';
-import WebSocket from 'ws';
-
-const logger = pino({
-  level: 'info',
-});
 
 export class ComfyUIWeb {
   constructor(serverAddress) {
@@ -193,10 +187,70 @@ export class ComfyUIWeb {
   }
 
   // 查找节点然后覆盖数据
-  async updateObject(objects,updatedObject) {
-    if (objects.hasOwnProperty(id)) {
-      objects[id].inputs = { ...objects[id].inputs, ...updatedObject }
-    }
+  async updateObject(payload, feature) {
+    const { input, workflow } = feature
+    Object.keys(input).map(key => {
+      let idKey = input[key].id
+      let updatedObject = {}
+      // 判断有没有值
+      if (payload.hasOwnProperty(key)){
+        if (key === 'positive') {
+          updatedObject = { string: payload[key] }
+        } else if (key === 'negative') {
+          updatedObject = { string: payload[key] }
+        } else if(key === 'image') {
+          let updatedObjectImage = {}
+          payload[key].forEach(async (obj) => {
+            let imgs = await this.uploadImage(obj.file,'')
+            updatedObjectImage = { image: imgs.filename }
+            if (workflow.hasOwnProperty(v.id)) {
+              workflow[obj.id].inputs = { ...workflow[obj.id].inputs, ...updatedObjectImage }
+            }
+          })
+        } else if (key === 'batchSize') {
+          updatedObject = { [key.key]: payload[key] }
+        } else if (key === 'style') {
+          let { checkpoints, loras, samplers } = payload[key]
+          let updatedObjectStyle = {}
+          if (checkpoints.length > 0) {
+            checkpoints.forEach(v => {
+              updatedObjectStyle = { ckpt_name: v.ckpt_name }
+            });
+            if (workflow.hasOwnProperty(v.id)) {
+              workflow[v.id].inputs = { ...workflow[v.id].inputs, ...updatedObjectStyle }
+            }
+          }
+          if (samplers.length > 0) {
+            samplers.forEach(v => {
+              updatedObjectStyle = {
+                cfg: v.cfg,
+                steps: v.steps,
+                sampler_name: v.sampler_name,
+                scheduler: v.scheduler
+              }
+              if (workflow.hasOwnProperty(v.id)) {
+                workflow[v.id].inputs = { ...workflow[v.id].inputs, ...updatedObjectStyle }
+              }
+            })
+          }
+          if (loras.length > 0) {
+            loras.forEach(v => {
+              updatedObjectStyle = { 
+                lora_name: v.lora_name, 
+                strength_model: v.strength_model 
+              }
+              if (workflow.hasOwnProperty(v.id)) {
+                workflow[v.id].inputs = { ...workflow[v.id].inputs, ...updatedObjectStyle }
+              }
+            });
+          }
+        }
+       }
+      if (workflow.hasOwnProperty(idKey)) {
+        workflow[idKey].inputs = { ...workflow[idKey].inputs, ...updatedObject}
+      }
+    });
+    return workflow
   }
 
   async genWithWorkflow(prompt) {

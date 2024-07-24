@@ -1,0 +1,30 @@
+{
+  "positive": " 1 girl",
+  "negative": " 1 boy",
+  "batchSize": 1,
+  "images": [
+    {
+      "id": "12",
+      "file": "file"
+    }
+  ],
+  "style": {
+    "samplers": [
+      {
+        "id": "136",
+        "cfg": 7,
+        "steps": 30,
+        "samplers_name": "",
+        "scheduler": ""
+      }
+    ],
+    "checkpoints": [{ "ckpt_name": "", "id:": "235" }],
+    "loras": [
+      {
+        "id": "156",
+        "lora_name": "",
+        "strength_model": 1
+      }
+    ]
+  }
+}

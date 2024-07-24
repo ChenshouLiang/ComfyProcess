@@ -32,5 +32,9 @@ const client = new ComfyUIClient(serverAddress);
 const images = await client.genWithWorkflow(prompt)
 // 将url转Blob
 await client.urlToBlob(url);
+// 传值 (图片图片名称)
+await client.uploadImage(image, filename)
+// 数据合并(数据，规则)
+await client.updateObject(payload,feature)
 ```
 

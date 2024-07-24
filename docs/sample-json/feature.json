@@ -1,0 +1,211 @@
+{
+  "config": {
+    "baseModel": ["SD1.5"],
+    "toolName": "AI背景更换",
+    "introduce": "上传图片，一键替换境背景",
+    "routeName": "/ai/operate",
+    "coverUrl": ""
+  },
+  "input": {
+    "negative": {
+      "id": "23",
+      "type": "string",
+      "title": "反向提示词"
+    },
+    "positive": {
+      "id": "21",
+      "type": "string",
+      "title": "正向提示词"
+    },
+    "batchSize": {
+      "id": "12",
+      "key": "num_images_per_prompt",
+      "type": "number"
+    },
+    "outPainting": {
+      "id": "13",
+      "top": 100,
+      "bottom": 100,
+      "left": 100,
+      "right": 100,
+      "feathering": 50
+    },
+    "images": [
+      {
+        "id": "11",
+        "title": "主图"
+      }
+    ],
+    "styles": [
+      {
+        "samplers": [
+          {
+            "id": "136",
+            "cfg": 7,
+            "steps": 30,
+            "samplers_name": "",
+            "scheduler": ""
+          }
+        ],
+        "checkpoints": [{ "ckpt_name": "", "id:": "235" }],
+        "loras": [{
+            "id": "156",
+            "lora_name": "",
+            "strength_model": 1
+        }]
+      }
+    ]
+  },
+  "workflow": {
+    "6": {
+      "_meta": {
+        "title": "(Down)load Kolors Model"
+      },
+      "inputs": {
+        "model": "Kwai-Kolors/Kolors",
+        "precision": "fp16"
+      },
+      "class_type": "DownloadAndLoadKolorsModel"
+    },
+    "10": {
+      "_meta": {
+        "title": "VAE解码"
+      },
+      "inputs": {
+        "vae": [
+          "11",
+          0
+        ],
+        "samples": [
+          "14",
+          0
+        ]
+      },
+      "class_type": "VAEDecode"
+    },
+    "11": {
+      "_meta": {
+        "title": "VAE加载器"
+      },
+      "inputs": {
+        "vae_name": "kolors\\diffusion_pytorch_model.fp16.safetensors"
+      },
+      "class_type": "VAELoader"
+    },
+    "12": {
+      "_meta": {
+        "title": "Kolors Text Encode"
+      },
+      "inputs": {
+        "prompt": [
+          "21",
+          0
+        ],
+        "chatglm3_model": [
+          "19",
+          0
+        ],
+        "negative_prompt": [
+          "23",
+          0
+        ],
+        "num_images_per_prompt": 1
+      },
+      "class_type": "KolorsTextEncode"
+    },
+    "13": {
+      "_meta": {
+        "title": "(Down)load ChatGLM3 Model"
+      },
+      "inputs": {
+        "precision": "quant8"
+      },
+      "class_type": "DownloadAndLoadChatGLM3"
+    },
+    "14": {
+      "_meta": {
+        "title": "Kolors Sampler"
+      },
+      "inputs": {
+        "cfg": 5,
+        "seed": [
+          "20",
+          0
+        ],
+        "steps": 25,
+        "width": 1920,
+        "height": 1088,
+        "scheduler": "EulerDiscreteScheduler",
+        "kolors_model": [
+          "6",
+          0
+        ],
+        "kolors_embeds": [
+          "12",
+          0
+        ],
+        "denoise_strength": 1
+      },
+      "class_type": "KolorsSampler"
+    },
+    "19": {
+      "_meta": {
+        "title": "Load ChatGLM3 Model"
+      },
+      "inputs": {
+        "chatglm3_checkpoint": "chatglm3-8bit.safetensors"
+      },
+      "class_type": "LoadChatGLM3"
+    },
+    "20": {
+      "_meta": {
+        "title": "随机种"
+      },
+      "inputs": {
+        "seed": -1
+      },
+      "class_type": "Seed (rgthree)"
+    },
+    "21": {
+      "_meta": {
+        "title": "String Literal"
+      },
+      "inputs": {
+        "string": ""
+      },
+      "class_type": "String Literal"
+    },
+    "23": {
+      "_meta": {
+        "title": "String Literal"
+      },
+      "inputs": {
+        "string": ""
+      },
+      "class_type": "String Literal"
+    },
+    "26": {
+      "_meta": {
+        "title": "保存图像"
+      },
+      "inputs": {
+        "images": [
+          "10",
+          0
+        ],
+        "filename_prefix": "ComfyUI"
+      },
+      "class_type": "SaveImage"
+    },
+    "30": {
+      "_meta": {
+        "title": "(Down)load Kolors Model"
+      },
+      "inputs": {
+        "model": "Kwai-Kolors/Kolors",
+        "precision": "fp16"
+      },
+      "class_type": "DownloadAndLoadKolorsModel"
+    }
+  }
+}
