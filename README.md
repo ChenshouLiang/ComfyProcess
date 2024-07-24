@@ -25,7 +25,7 @@ await client.disconnect();
 
 ```js
 import { ComfyUIWeb } from 'comfy-process';
-const client = new ComfyUIClient('127.0.0.1:8189');
+const client = new ComfyUIWeb('127.0.0.1:8189');
 const images = await client.genWithWorkflow(prompt)
 // 将url转Blob
 await client.urlToBlob(url);
