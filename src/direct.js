@@ -181,8 +181,8 @@ export class ComfyUIWeb {
 
   // url转Blob
   async urlToBlob(url) {
-    let { filename, subfolder, type } = await param2Obj(url)
-    const blob = await getImage(filename, subfolder, type)
+    let { filename, subfolder, type } = await this.paramObj(url)
+    const blob = await this.getImage(filename, subfolder, type)
     return blob
   }
 
@@ -200,13 +200,13 @@ export class ComfyUIWeb {
           updatedObject = { string: payload[key] }
         } else if(key === 'image') {
           let updatedObjectImage = {}
-          payload[key].forEach(async (obj) => {
+          Promise.all(payload[key].map(async (obj) => {
             let imgs = await this.uploadImage(obj.file,'')
             updatedObjectImage = { image: imgs.filename }
-            if (workflow.hasOwnProperty(v.id)) {
+            if (workflow.hasOwnProperty(obj.id)) {
               workflow[obj.id].inputs = { ...workflow[obj.id].inputs, ...updatedObjectImage }
             }
-          })
+          }))
         } else if (key === 'batchSize') {
           updatedObject = { [key.key]: payload[key] }
         } else if (key === 'style') {
@@ -215,10 +215,10 @@ export class ComfyUIWeb {
           if (checkpoints.length > 0) {
             checkpoints.forEach(v => {
               updatedObjectStyle = { ckpt_name: v.ckpt_name }
+              if (workflow.hasOwnProperty(v.id)) {
+                workflow[v.id].inputs = { ...workflow[v.id].inputs, ...updatedObjectStyle }
+              }
             });
-            if (workflow.hasOwnProperty(v.id)) {
-              workflow[v.id].inputs = { ...workflow[v.id].inputs, ...updatedObjectStyle }
-            }
           }
           if (samplers.length > 0) {
             samplers.forEach(v => {
@@ -262,7 +262,7 @@ export class ComfyUIWeb {
       try {
         while (!isProcessComplete) {
           // 获取图片进度
-          const queueInfo = await getQueue();
+          const queueInfo = await this.getQueue();
           if (queueInfo.queue_running.length === 0 && queueInfo.queue_pending.length === 0) {
             isProcessComplete = true
           } else {
