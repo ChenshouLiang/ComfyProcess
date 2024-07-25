@@ -1,6 +1,6 @@
 {
-  "name": "comfy-client",
-  "version": "0.1.0",
+  "name": "comfy-process",
+  "version": "0.1.6",
   "repository": "https://github.com/ChenshouLiang/ComfyProcess.git",
   "author": "chenshouliang <m17635645973@163.com>",
   "license": "MIT",
