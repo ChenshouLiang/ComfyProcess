@@ -1,6 +1,6 @@
 {
-  "name": "comfy-process",
-  "version": "0.1.5",
+  "name": "comfy-client",
+  "version": "0.1.0",
   "repository": "https://github.com/ChenshouLiang/ComfyProcess.git",
   "author": "chenshouliang <m17635645973@163.com>",
   "license": "MIT",
@@ -36,6 +36,8 @@
     "prettier": "prettier --config .prettierrc --write ./src"
   },
   "dependencies": {
+    "comfy-client": "^0.1.0",
+    "comfy-process": "^0.1.5",
     "pino": "^9.3.1",
     "uuid": "^10.0.0",
     "ws": "^8.18.0"

@@ -189,16 +189,16 @@ export class ComfyUIWeb {
   // 查找节点然后覆盖数据
   async updateObject(payload, feature) {
     const { input, workflow } = feature
-    Object.keys(input).map(key => {
-      let idKey = input[key].id
+    Object.keys(input).map(keys => {
+      let idKey = input[keys].id
       let updatedObject = {}
       // 判断有没有值
-      if (payload.hasOwnProperty(key)){
-        if (key === 'positive') {
+      if (payload.hasOwnProperty(keys)){
+        if (keys === 'positive') {
           updatedObject = { string: payload[key] }
-        } else if (key === 'negative') {
-          updatedObject = { string: payload[key] }
-        } else if(key === 'image') {
+        } else if (keys === 'negative') {
+          updatedObject = { string: payload[keys] }
+        } else if (keys === 'image') {
           let updatedObjectImage = {}
           Promise.all(payload[key].map(async (obj) => {
             let imgs = await this.uploadImage(obj.file,'')
@@ -207,10 +207,10 @@ export class ComfyUIWeb {
               workflow[obj.id].inputs = { ...workflow[obj.id].inputs, ...updatedObjectImage }
             }
           }))
-        } else if (key === 'batchSize') {
-          updatedObject = { [key.key]: payload[key] }
-        } else if (key === 'style') {
-          let { checkpoints, loras, samplers } = payload[key]
+        } else if (keys === 'batchSize') {
+          updatedObject = { [keys.key]: payload[keys] }
+        } else if (keys === 'style') {
+          let { checkpoints, loras, samplers } = payload[keys]
           let updatedObjectStyle = {}
           if (checkpoints.length > 0) {
             checkpoints.forEach(v => {
@@ -281,7 +281,7 @@ export class ComfyUIWeb {
             // 用于存放图片
             const imagesOutput = []
             for (const item of nodeOutput.images) {
-              const imageUrl = `${this.serverAddress}/view?subfolder=${item.subfolder}&type=${item.type}&filename=${item.filename}`
+              const imageUrl = `http://${this.serverAddress}/view?subfolder=${item.subfolder}&type=${item.type}&filename=${item.filename}`
               imagesOutput.push(imageUrl);
             }
             outputImages[nodeId] = imagesOutput
