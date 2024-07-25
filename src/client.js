@@ -1,5 +1,3 @@
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
 import pino from 'pino';
 import WebSocket from 'ws';
 
@@ -199,16 +197,6 @@ export class ComfyUIClient {
       throw new Error(JSON.stringify(json));
     }
     return json;
-  }
-
-  async saveImages(response, outputDir) {
-    for (const nodeId of Object.keys(response)) {
-      for (const img of response[nodeId]) {
-        const arrayBuffer = await img.blob.arrayBuffer();
-        const outputPath = join(outputDir, img.image.filename);
-        await writeFile(outputPath, Buffer.from(arrayBuffer));
-      }
-    }
   }
 
   async getImages(prompt) {

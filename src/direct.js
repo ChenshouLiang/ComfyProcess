@@ -1,6 +1,3 @@
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-
 export class ComfyUIWeb {
   constructor(serverAddress) {
     this.serverAddress = serverAddress;
@@ -12,7 +9,7 @@ export class ComfyUIWeb {
     if (overwrite !== undefined) {
       formData.append('overwrite', overwrite.toString());
     }
-    const res = await fetch(`http://${this.serverAddress}/upload/image`, {
+    const res = await fetch(`${this.serverAddress}/upload/image`, {
       method: 'POST',
       body: formData,
     });
@@ -24,7 +21,7 @@ export class ComfyUIWeb {
   }
 
   async getEmbeddings() {
-    const res = await fetch(`http://${this.serverAddress}/embeddings`);
+    const res = await fetch(`${this.serverAddress}/embeddings`);
     const json = await res.json();
     if ('error' in json) {
       throw new Error(JSON.stringify(json));
@@ -33,7 +30,7 @@ export class ComfyUIWeb {
   }
 
   async queuePrompt(prompt) {
-    const res = await fetch(`http://${this.serverAddress}/prompt`, {
+    const res = await fetch(`${this.serverAddress}/prompt`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -52,7 +49,7 @@ export class ComfyUIWeb {
   }
 
   async interrupt() {
-    const res = await fetch(`http://${this.serverAddress}/interrupt`, {
+    const res = await fetch(`${this.serverAddress}/interrupt`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -66,7 +63,7 @@ export class ComfyUIWeb {
   }
 
   async editHistory(params) {
-    const res = await fetch(`http://${this.serverAddress}/history`, {
+    const res = await fetch(`${this.serverAddress}/history`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -83,7 +80,7 @@ export class ComfyUIWeb {
   }
 
   async getImage(filename, subfolder, type) {
-    const res = await fetch(`http://${this.serverAddress}/view?` + new URLSearchParams({
+    const res = await fetch(`${this.serverAddress}/view?` + new URLSearchParams({
       filename,
       subfolder,
       type
@@ -95,7 +92,7 @@ export class ComfyUIWeb {
 
   async viewMetadata(folderName, filename) {
     const res = await fetch(
-      `http://${this.serverAddress}/view_metadata/${folderName}?filename=${filename}`,
+      `${this.serverAddress}/view_metadata/${folderName}?filename=${filename}`,
     );
     const json = await res.json();
     if ('error' in json) {
@@ -105,7 +102,7 @@ export class ComfyUIWeb {
   }
 
   async getSystemStats() {
-    const res = await fetch(`http://${this.serverAddress}/system_stats`);
+    const res = await fetch(`${this.serverAddress}/system_stats`);
     const json = await res.json();
     if ('error' in json) {
       throw new Error(JSON.stringify(json));
@@ -114,7 +111,7 @@ export class ComfyUIWeb {
   }
 
   async getPrompt() {
-    const res = await fetch(`http://${this.serverAddress}/prompt`);
+    const res = await fetch(`${this.serverAddress}/prompt`);
     const json = await res.json();
     if ('error' in json) {
       throw new Error(JSON.stringify(json));
@@ -123,7 +120,7 @@ export class ComfyUIWeb {
   }
 
   async getObjectInfo(nodeClass) {
-    const res = await fetch(`http://${this.serverAddress}/object_info` + (nodeClass ? `/${nodeClass}` : ''));
+    const res = await fetch(`${this.serverAddress}/object_info` + (nodeClass ? `/${nodeClass}` : ''));
     const json = await res.json();
     if ('error' in json) {
       throw new Error(JSON.stringify(json));
@@ -133,7 +130,7 @@ export class ComfyUIWeb {
 
   async getHistory(promptId) {
     const res = await fetch(
-      `http://${this.serverAddress}/history` + (promptId ? `/${promptId}` : ''),
+      `${this.serverAddress}/history` + (promptId ? `/${promptId}` : ''),
     );
     const json = await res.json();
     if ('error' in json) {
@@ -143,22 +140,12 @@ export class ComfyUIWeb {
   }
 
   async getQueue() {
-    const res = await fetch(`http://${this.serverAddress}/queue`);
+    const res = await fetch(`${this.serverAddress}/queue`);
     const json = await res.json();
     if ('error' in json) {
       throw new Error(JSON.stringify(json));
     }
     return json;
-  }
-
-  async saveImages(response, outputDir) {
-    for (const nodeId of Object.keys(response)) {
-      for (const img of response[nodeId]) {
-        const arrayBuffer = await img.blob.arrayBuffer();
-        const outputPath = join(outputDir, img.image.filename);
-        await writeFile(outputPath, Buffer.from(arrayBuffer));
-      }
-    }
   }
 
   async paramObj(url) {
@@ -193,22 +180,16 @@ export class ComfyUIWeb {
       let idKey = input[keys].id
       let updatedObject = {}
       // 判断有没有值
-      if (payload.hasOwnProperty(keys)){
-        if (keys === 'positive') {
-          updatedObject = { string: payload[key] }
-        } else if (keys === 'negative') {
-          updatedObject = { string: payload[keys] }
-        } else if (keys === 'image') {
+      if (payload.hasOwnProperty(keys)) {
+        if (keys === 'image') {
           let updatedObjectImage = {}
           Promise.all(payload[key].map(async (obj) => {
-            let imgs = await this.uploadImage(obj.file,'')
+            let imgs = await this.uploadImage(obj.file, '')
             updatedObjectImage = { image: imgs.filename }
             if (workflow.hasOwnProperty(obj.id)) {
               workflow[obj.id].inputs = { ...workflow[obj.id].inputs, ...updatedObjectImage }
             }
           }))
-        } else if (keys === 'batchSize') {
-          updatedObject = { [keys.key]: payload[keys] }
         } else if (keys === 'style') {
           let { checkpoints, loras, samplers } = payload[keys]
           let updatedObjectStyle = {}
@@ -235,19 +216,24 @@ export class ComfyUIWeb {
           }
           if (loras.length > 0) {
             loras.forEach(v => {
-              updatedObjectStyle = { 
-                lora_name: v.lora_name, 
-                strength_model: v.strength_model 
+              updatedObjectStyle = {
+                lora_name: v.lora_name,
+                strength_model: v.strength_model
               }
               if (workflow.hasOwnProperty(v.id)) {
                 workflow[v.id].inputs = { ...workflow[v.id].inputs, ...updatedObjectStyle }
               }
             });
           }
+        } else if (keys === 'outPainting') {
+          updatedObject = payload[keys]
+          console.log('updatedObject', updatedObject)
+        } else {
+          updatedObject = { [input[keys].key]: payload[keys] }
         }
-       }
+      }
       if (workflow.hasOwnProperty(idKey)) {
-        workflow[idKey].inputs = { ...workflow[idKey].inputs, ...updatedObject}
+        workflow[idKey].inputs = { ...workflow[idKey].inputs, ...updatedObject }
       }
     });
     return workflow
@@ -281,7 +267,7 @@ export class ComfyUIWeb {
             // 用于存放图片
             const imagesOutput = []
             for (const item of nodeOutput.images) {
-              const imageUrl = `http://${this.serverAddress}/view?subfolder=${item.subfolder}&type=${item.type}&filename=${item.filename}`
+              const imageUrl = `${this.serverAddress}/view?subfolder=${item.subfolder}&type=${item.type}&filename=${item.filename}`
               imagesOutput.push(imageUrl);
             }
             outputImages[nodeId] = imagesOutput
